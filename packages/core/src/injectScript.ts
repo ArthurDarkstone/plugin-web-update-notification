@@ -55,7 +55,7 @@ function querySelector(selector: string) {
 }
 
 window.pluginWebUpdateNotice_ = {
-  checkUpdate: () => {},
+  checkUpdate: () => { },
   dismissUpdate,
   closeNotification,
   setLocale: (locale: string) => {
@@ -223,6 +223,51 @@ function getLocaleText(locale: string, key: keyof LocaleData[string], localeData
 }
 
 /**
+ * Detect if the browser is in dark mode
+ * @returns {boolean} true if dark mode is detected
+ */
+function isDarkMode(): boolean {
+  try {
+    // Check prefers-color-scheme
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return true
+    }
+
+    // Check document background color as fallback
+    const bodyStyles = window.getComputedStyle(document.body)
+    const bgColor = bodyStyles.backgroundColor
+
+    if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
+      // Parse RGB values to determine if dark
+      const rgb = bgColor.match(/\d+/g)
+      if (rgb && rgb.length >= 3) {
+        const [r, g, b] = rgb.map(Number)
+        // Calculate brightness using relative luminance formula
+        const brightness = (r * 0.299 + g * 0.587 + b * 0.114)
+        return brightness < 128
+      }
+    }
+
+    return false
+  } catch (err) {
+    return false
+  }
+}
+
+/**
+ * Get default theme colors based on browser theme
+ * @returns {object} Object containing backgroundColor and textColor
+ */
+function getDefaultThemeColors() {
+  const darkMode = isDarkMode()
+
+  return {
+    backgroundColor: darkMode ? '#1f1f1f' : '#fff',
+    textColor: darkMode ? '#ffffff' : '#000000d9'
+  }
+}
+
+/**
  * show update notification
  */
 function showNotification(options: Options) {
@@ -243,7 +288,11 @@ function showNotification(options: Options) {
       notificationInnerHTML = customNotificationHTML
     }
     else {
-      const { placement = 'bottomRight', primaryColor, secondaryColor } = notificationConfig || {}
+      const { placement = 'bottomRight', primaryColor, secondaryColor, backgroundColor, textColor } = notificationConfig || {}
+      const defaultThemeColors = getDefaultThemeColors()
+      const finalBackgroundColor = backgroundColor || defaultThemeColors.backgroundColor
+      const finalTextColor = textColor || defaultThemeColors.textColor
+
       const title = notificationProps?.title ?? getLocaleText(currentLocale, 'title', localeData)
       const description = notificationProps?.description ?? getLocaleText(currentLocale, 'description', localeData)
       const buttonText = notificationProps?.buttonText ?? getLocaleText(currentLocale, 'buttonText', localeData)
@@ -253,7 +302,7 @@ function showNotification(options: Options) {
       notificationWrap.classList.add('plugin-web-update-notice')
       notificationWrap.style.cssText = `${NOTIFICATION_POSITION_MAP[placement]}`
       notificationInnerHTML = `
-    <div class="plugin-web-update-notice-content" data-cy="notification-content">
+    <div class="plugin-web-update-notice-content" data-cy="notification-content" style="background-color:${finalBackgroundColor};color:${finalTextColor}">
       <div class="plugin-web-update-notice-content-title">
         ${title}
       </div>
@@ -262,7 +311,7 @@ function showNotification(options: Options) {
       </div>
       <div class="plugin-web-update-notice-tools">
         ${dismissButtonHtml}
-        <a class="plugin-web-update-notice-btn plugin-web-update-notice-refresh-btn" style="color:${primaryColor}">
+        <a class="plugin-web-update-notice-btn plugin-web-update-notice-refresh-btn" style="color:${primaryColor || '#1677ff'}">
           ${buttonText}
         </a>
       </div>

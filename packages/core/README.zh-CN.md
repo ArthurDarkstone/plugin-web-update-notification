@@ -340,6 +340,16 @@ export interface NotificationConfig {
    * @default 'rgba(0,0,0,.25)'
   */
   secondaryColor?: string
+  /**
+   * notification background color
+   * @default auto detect from browser theme, fallback to '#fff'
+   */
+  backgroundColor?: string
+  /**
+   * notification text color
+   * @default auto detect from browser theme, fallback to '#000000d9'
+   */
+  textColor?: string
   /** @default 'bottomRight' */
   placement?: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight'
 }
